@@ -1,12 +1,11 @@
-version: '3'
+POSTGRES_USERversion: '3'
 
 services:
   db:
     image: postgres
     environment:
       POSTGRES_DB: concourse
-      POSTGRES_USER: concourse_user
-      POSTGRES_PASSWORD: concourse_pass
+    env: ../secrets/concourse-db.env
     logging:
       driver: "json-file"
       options:
@@ -23,11 +22,8 @@ services:
     environment:
       CONCOURSE_EXTERNAL_URL: http://localhost:8080
       CONCOURSE_POSTGRES_HOST: db
-      CONCOURSE_POSTGRES_USER: concourse_user
-      CONCOURSE_POSTGRES_PASSWORD: concourse_pass
       CONCOURSE_POSTGRES_DATABASE: concourse
-      CONCOURSE_ADD_LOCAL_USER: test:test
-      CONCOURSE_MAIN_TEAM_LOCAL_USER: test
+    env: ../secrets/concourse-web.env
     logging:
       driver: "json-file"
       options:
