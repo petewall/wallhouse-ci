@@ -22,7 +22,7 @@ services:
     ports: ["8080:8080"]
     volumes: ["./keys/web:/concourse-keys"]
     environment:
-      CONCOURSE_EXTERNAL_URL: http://localhost:8080
+      CONCOURSE_EXTERNAL_URL: http://wallserver.local:8080
       CONCOURSE_POSTGRES_HOST: db
       CONCOURSE_POSTGRES_DATABASE: concourse
     env_file: ../secrets/concourse-web.env
