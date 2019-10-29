@@ -6,6 +6,8 @@ services:
     environment:
       POSTGRES_DB: concourse
     env: ../secrets/concourse-db.env
+    volumes:
+      - /Users/pwall/data/concourse-db:/var/lib/postgresql/data
     logging:
       driver: "json-file"
       options:
