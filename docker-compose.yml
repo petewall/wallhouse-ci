@@ -7,15 +7,15 @@ services:
       - PGID=20
       - TZ=America/Chicago
     volumes:
-      - ../ddclient.conf:/config/ddclient.conf
+      - ../secrets/ddclient.conf:/config/ddclient.conf
     restart: unless-stopped
 
   nginx:
     image: nginx
     volumes:
       - ./nginx.ci.petewall.net.conf:/etc/nginx/conf.d/nginx.ci.petewall.net.conf
-      - ../certbot/conf:/etc/letsencrypt
-      - ../certbot/www:/var/www/certbot
+      - ../secrets/certbot/conf:/etc/letsencrypt
+      - ../secrets/certbot/www:/var/www/certbot
     ports:
       - 80:80
       - 443:443
