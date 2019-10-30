@@ -7,15 +7,15 @@ services:
       - PGID=20
       - TZ=America/Chicago
     volumes:
-      - /Users/pwall/src/petewall/secrets/ddclient.conf:/config/ddclient.conf
+      - ../ddclient.conf:/config/ddclient.conf
     restart: unless-stopped
 
   nginx:
     image: nginx
     volumes:
       - ./nginx.ci.petewall.net.conf:/etc/nginx/conf.d/nginx.ci.petewall.net.conf
-      - /Users/pwall/src/petewall/secrets/certbot/conf:/etc/letsencrypt
-      - /Users/pwall/src/petewall/secrets/certbot/www:/var/www/certbot
+      - ../certbot/conf:/etc/letsencrypt
+      - ../certbot/www:/var/www/certbot
     ports:
       - 80:80
       - 443:443
@@ -25,8 +25,8 @@ services:
   certbot:
     image: certbot/certbot
     volumes:
-      - /Users/pwall/src/petewall/secrets/certbot/conf:/etc/letsencrypt
-      - /Users/pwall/src/petewall/secrets/certbot/www:/var/www/certbot
+      - ../secrets/certbot/conf:/etc/letsencrypt
+      - ../secrets/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   db:
@@ -46,11 +46,11 @@ services:
     image: concourse/concourse
     command: web
     links: [db]
-    depends_on: [db]
+    depends_on: [db, nginx]
     ports: ["8080:8080"]
     volumes: ["./keys/web:/concourse-keys"]
     environment:
-      CONCOURSE_EXTERNAL_URL: http://ci.petewall.net:8080
+      CONCOURSE_EXTERNAL_URL: http://ci.petewall.net
       CONCOURSE_POSTGRES_HOST: db
       CONCOURSE_POSTGRES_DATABASE: concourse
     env_file: ../secrets/concourse-web.env
