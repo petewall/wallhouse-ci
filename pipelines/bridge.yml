@@ -4,6 +4,7 @@ resources:
     source:
       url: git@github.com:petewall/wallhouse-bridge.git
       branch: master
+      private_key: ((github-repo-key))
 
 jobs:
   - name: test
