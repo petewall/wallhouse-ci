@@ -1,6 +1,25 @@
 version: '3'
-
 services:
+  ddclient:
+    image: linuxserver/ddclient
+    container_name: ddclient
+    environment:
+      - PUID=501
+      - PGID=20
+      - TZ=America/Chicago
+    volumes:
+      - /Users/pwall/src/petewall/secrets/ddclient.conf:/config/ddclient.conf
+    restart: unless-stopped
+
+  router:
+    image: nginx
+    volumes:
+      - ./nginx.ci.petewall.net.conf:/etc/nginx/conf.d/nginx.ci.petewall.net.conf
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+
   db:
     image: postgres
     environment:
@@ -22,7 +41,7 @@ services:
     ports: ["8080:8080"]
     volumes: ["./keys/web:/concourse-keys"]
     environment:
-      CONCOURSE_EXTERNAL_URL: http://wallserver.local:8080
+      CONCOURSE_EXTERNAL_URL: http://ci.petewall.net:8080
       CONCOURSE_POSTGRES_HOST: db
       CONCOURSE_POSTGRES_DATABASE: concourse
     env_file: ../secrets/concourse-web.env
