@@ -9,6 +9,13 @@ resources:
         - ci/**
       private_key: ((github-repo-key))
 
+  - name: image
+    type: docker-image
+    source:
+      repository: petewall/bridge
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
   - name: feature-test-image-source
     type: git
     source:
@@ -69,3 +76,6 @@ jobs:
             dir: source
             path: npm
             args: [test]
+      - put: image
+        params:
+          build: source
