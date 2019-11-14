@@ -4,13 +4,52 @@ resources:
     source:
       uri: git@github.com:petewall/wallhouse-ota-service.git
       branch: master
+      ignore_paths:
+        - ci/*
+        - ci/**
       private_key: ((github-repo-key))
 
+  - name: image
+    type: docker-image
+    source:
+      repository: petewall/ota-service
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
+  - name: feature-test-image-source
+    type: git
+    source:
+      uri: git@github.com:petewall/wallhouse-ota-service.git
+      branch: master
+      paths:
+        - ci/*
+        - ci/**
+      private_key: ((github-repo-key))
+
+  - name: feature-test-image
+    type: docker-image
+    source:
+      repository: petewall/ota-service-test
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
 jobs:
-  - name: test
-    plan: 
-      - get: source
+  - name: build-feature-test-image
+    plan:
+      - get: feature-test-image-source
         trigger: true
+      - put: feature-test-image
+        params:
+          build: feature-test-image-source/ci
+
+  - name: build-image
+    plan:
+      - in_parallel:
+        - get: feature-test-image
+          passed:
+            - build-feature-test-image
+        - get: source
+          trigger: true
       - task: deps
         config:
           platform: linux
@@ -40,20 +79,20 @@ jobs:
           run:
             dir: source
             path: npm
-            args: [lint]
+            args: [run, lint]
       - task: test
+        image: feature-test-image
         config:
           platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: node
-              tag: slim
           inputs:
             - name: source
           params:
             CI: true
+            DEBUG: "otaService:*"
           run:
             dir: source
             path: npm
             args: [test]
+      - put: image
+        params:
+          build: source

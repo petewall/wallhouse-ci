@@ -42,7 +42,7 @@ jobs:
         params:
           build: feature-test-image-source/ci
 
-  - name: test
+  - name: build-image
     plan: 
       - in_parallel:
         - get: feature-test-image
@@ -72,6 +72,8 @@ jobs:
           platform: linux
           inputs:
             - name: source
+          params:
+            DEBUG: "*"
           run:
             dir: source
             path: npm
