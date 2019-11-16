@@ -1,0 +1,42 @@
+resources:
+  - name: source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/wallhouse-device-wemos-d1-mini.git
+      branch: master
+      private_key: ((github-repo-key))
+
+  - name: platformio
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/platformio
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
+jobs:
+  - name: build-bootloader
+    plan:
+      - in_parallel:
+        - get: source
+          trigger: true
+        - get: platformio
+      - task: build
+        image: platformio
+        file: source/ci/tasks/build.yml
+        params:
+          ENVIRONMENT: d1_mini_bootloader
+
+  - name: build-temperature
+    plan:
+      - in_parallel:
+        - get: source
+          trigger: true
+        - get: platformio
+      - task: build
+        image: platformio
+        file: source/ci/tasks/build.yml
+        params:
+          ENVIRONMENT: d1_mini_temp_sensor
+        
