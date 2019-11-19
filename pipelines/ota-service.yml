@@ -91,7 +91,7 @@ jobs:
             - name: source
           params:
             CI: true
-            DEBUG: "otaService:*"
+            DEBUG: "browser,otaService:*"
           run:
             dir: source
             path: npm
