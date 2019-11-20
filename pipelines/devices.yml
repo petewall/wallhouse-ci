@@ -1,3 +1,10 @@
+resource_types:
+  - name: pypi
+    type: docker-image
+    source:
+      repository: punkadiddle/concourse-pypi-resource
+      tag: latest-rc
+
 resources:
   - name: source
     type: git
@@ -5,6 +12,24 @@ resources:
     source:
       uri: git@github.com:petewall/wallhouse-device-wemos-d1-mini.git
       branch: master
+      private_key: ((github-repo-key))
+
+  - name: bootloader-version
+    type: semver
+    source:
+      driver: git
+      uri: git@github.com:petewall/versions.git
+      branch: master
+      file: firmware-bootloader
+      private_key: ((github-repo-key))
+
+  - name: temperature-version
+    type: semver
+    source:
+      driver: git
+      uri: git@github.com:petewall/versions.git
+      branch: master
+      file: firmware-temperature
       private_key: ((github-repo-key))
 
   - name: platformio
@@ -15,10 +40,38 @@ resources:
       username: ((dockerhub-username))
       password: ((dockerhub-password))
 
+  - name: platformio-package
+    type: pypi
+    icon: language-python
+    source:
+      name: platformio
+
+  - name: platformio-source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/platformio-docker
+      branch: master
+      private_key: ((github-repo-key))
+
+
 jobs:
+  - name: build-platformio
+    plan:
+      - in_parallel:
+        - get: platformio-package
+          trigger: true
+        - get: platformio-source
+          trigger: true
+      - put: platformio
+        params:
+          build: platformio-source
+
   - name: build-bootloader
     plan:
       - in_parallel:
+        - get: version
+          resource: bootloader-version
         - get: source
           trigger: true
         - get: platformio
@@ -31,6 +84,8 @@ jobs:
   - name: build-temperature
     plan:
       - in_parallel:
+        - get: version
+          resource: temperature-version
         - get: source
           trigger: true
         - get: platformio
