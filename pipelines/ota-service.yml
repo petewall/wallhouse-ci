@@ -25,12 +25,12 @@ resources:
       uri: git@github.com:petewall/wallhouse-ota-service.git
       branch: master
       paths:
-        - ci/*
-        - ci/**
+        - ci/Dockerfile
       private_key: ((github-repo-key))
 
   - name: feature-test-image
     type: docker-image
+    icon: docker
     source:
       repository: petewall/ota-service-test
       username: ((dockerhub-username))

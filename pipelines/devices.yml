@@ -14,6 +14,17 @@ resources:
       branch: master
       private_key: ((github-repo-key))
 
+  - name: ota-source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/wallhouse-ota-service.git
+      branch: master
+      paths:
+        - ci/*
+        - ci/**
+      private_key: ((github-repo-key))
+
   - name: bootloader-version
     type: semver
     source:
@@ -54,7 +65,6 @@ resources:
       branch: master
       private_key: ((github-repo-key))
 
-
 jobs:
   - name: build-platformio
     plan:
@@ -72,26 +82,47 @@ jobs:
       - in_parallel:
         - get: version
           resource: bootloader-version
+          params:
+            bump: patch
         - get: source
           trigger: true
+        - get: ota-source
         - get: platformio
       - task: build
         image: platformio
         file: source/ci/tasks/build.yml
         params:
           ENVIRONMENT: d1_mini_bootloader
+      - task: firmware-upload
+        file: ota-source/ci/tasks/upload.yml
+        params:
+          OTA_SERVICE: http://wallserver.local:8266
+          TYPE: bootloader
+      - put: bootloader-version
+        params:
+          file: version/version
 
   - name: build-temperature
     plan:
       - in_parallel:
         - get: version
           resource: temperature-version
+          params:
+            bump: patch
         - get: source
           trigger: true
+        - get: ota-source
         - get: platformio
       - task: build
         image: platformio
         file: source/ci/tasks/build.yml
         params:
           ENVIRONMENT: d1_mini_temp_sensor
-        
+      - task: firmware-upload
+        file: ota-source/ci/tasks/upload.yml
+        params:
+          OTA_SERVICE: http://wallserver.local:8266
+          TYPE: temperature
+      - put: temperature-version
+        params:
+          file: version/version
