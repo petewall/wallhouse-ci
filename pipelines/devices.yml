@@ -88,6 +88,16 @@ jobs:
           trigger: true
         - get: ota-source
         - get: platformio
+      - task: check
+        image: platformio
+        config:
+          platform: linux
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: pio
+            args: ["check", "--environment", "d1_mini_bootloader"]
       - task: build
         image: platformio
         file: source/ci/tasks/build.yml
@@ -102,7 +112,7 @@ jobs:
         params:
           file: version/version
 
-  - name: build-temperature
+  - name: build-office-firmware
     plan:
       - in_parallel:
         - get: version
@@ -113,16 +123,32 @@ jobs:
           trigger: true
         - get: ota-source
         - get: platformio
+      - task: check
+        image: platformio
+        config:
+          platform: linux
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: pio
+            args: ["check", "--environment", "d1_mini_temp_sensor"]
       - task: build
         image: platformio
         file: source/ci/tasks/build.yml
         params:
+          DEVICE_ID: office
           ENVIRONMENT: d1_mini_temp_sensor
+          MQTT_HOSTNAME: wallserver.local
+          MQTT_PASSWORD: ((mqtt-password))
+          OTA_HOST: http://wallserver.local:8266
+          WIFI_SSID: ((wifi-ssid))
+          WIFI_PASSWORD: ((wifi-password))
       - task: firmware-upload
         file: ota-source/ci/tasks/upload.yml
         params:
           OTA_SERVICE: http://wallserver.local:8266
-          TYPE: temperature
+          TYPE: office
       - put: temperature-version
         params:
           file: version/version
