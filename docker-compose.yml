@@ -2,7 +2,6 @@ version: '3'
 services:
   ddclient:
     image: linuxserver/ddclient
-    init: true
     restart: unless-stopped
     environment:
       - PUID=501
@@ -14,7 +13,6 @@ services:
 
   nginx:
     image: nginx
-    init: true
     restart: unless-stopped
     volumes:
       - ./nginx.ci.petewall.net.conf:/etc/nginx/conf.d/nginx.ci.petewall.net.conf
@@ -29,7 +27,6 @@ services:
 
   certbot:
     image: certbot/certbot
-    init: true
     restart: unless-stopped
     volumes:
       - ../secrets/certbot/conf:/etc/letsencrypt
@@ -38,7 +35,6 @@ services:
 
   db:
     image: postgres
-    init: true
     restart: unless-stopped
     environment:
       POSTGRES_DB: concourse
@@ -53,7 +49,6 @@ services:
 
   web:
     image: concourse/concourse
-    init: true
     restart: unless-stopped
     command: web
     links: [db]
@@ -73,7 +68,6 @@ services:
 
   worker:
     image: concourse/concourse
-    init: true
     restart: unless-stopped
     command: worker
     privileged: true
