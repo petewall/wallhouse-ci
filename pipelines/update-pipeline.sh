@@ -15,7 +15,8 @@ fi
 
 fly -t wallhouse \
   set-pipeline \
-  --load-vars-from ${pipelines_dir}/../../secrets/pipeline-creds.yml \
+  --load-vars-from ${pipelines_dir}/../../secrets/pipeline-creds.json \
+  --load-vars-from ${pipelines_dir}/../../secrets/devices/devices.json \
   --pipeline $(basename ${pipeline%.yml}) \
   --config "${pipelines_dir}/${pipeline}"
 
