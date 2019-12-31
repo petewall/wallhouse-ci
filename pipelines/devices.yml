@@ -34,13 +34,13 @@ resources:
       file: firmware-bootloader
       private_key: ((github-repo-key))
 
-  - name: temperature-version
+  - name: office-version
     type: semver
     source:
       driver: git
       uri: git@github.com:petewall/versions.git
       branch: master
-      file: firmware-temperature
+      file: firmware-office
       private_key: ((github-repo-key))
 
   - name: platformio
@@ -88,6 +88,8 @@ jobs:
           trigger: true
         - get: ota-source
         - get: platformio
+          passed:
+            - build-platformio
       - task: check
         image: platformio
         config:
@@ -102,12 +104,15 @@ jobs:
         image: platformio
         file: source/ci/tasks/build.yml
         params:
-          ENVIRONMENT: d1_mini_bootloader
+          FIRMWARE_TYPE: d1_mini_bootloader
+          OTA_HOST: http://wallserver.local:8266
+          WIFI_SSID: ((wifi-ssid))
+          WIFI_PASSWORD: ((wifi-password))
       - task: firmware-upload
         file: ota-source/ci/tasks/upload.yml
         params:
           OTA_SERVICE: http://wallserver.local:8266
-          TYPE: bootloader
+          TYPE: d1_mini_bootloader
       - put: bootloader-version
         params:
           file: version/version
@@ -116,13 +121,15 @@ jobs:
     plan:
       - in_parallel:
         - get: version
-          resource: temperature-version
+          resource: office-version
           params:
             bump: patch
         - get: source
           trigger: true
         - get: ota-source
         - get: platformio
+          passed:
+            - build-platformio
       - task: check
         image: platformio
         config:
@@ -132,15 +139,15 @@ jobs:
           run:
             dir: source
             path: pio
-            args: ["check", "--environment", "d1_mini_temp_sensor"]
+            args: ["check", "--environment", "d1_mini_office"]
       - task: build
         image: platformio
         file: source/ci/tasks/build.yml
         params:
           DEVICE_ID: office
-          ENVIRONMENT: d1_mini_temp_sensor
+          FIRMWARE_TYPE: d1_mini_office
           MQTT_HOSTNAME: wallserver.local
-          MQTT_PASSWORD: ((mqtt-password))
+          MQTT_PASSWORD: ((device-office-mqtt-password))
           OTA_HOST: http://wallserver.local:8266
           WIFI_SSID: ((wifi-ssid))
           WIFI_PASSWORD: ((wifi-password))
@@ -148,7 +155,7 @@ jobs:
         file: ota-source/ci/tasks/upload.yml
         params:
           OTA_SERVICE: http://wallserver.local:8266
-          TYPE: office
-      - put: temperature-version
+          TYPE: d1_mini_office
+      - put: office-version
         params:
           file: version/version
