@@ -6,13 +6,31 @@ resource_types:
       tag: latest-rc
 
 resources:
-  - name: source
+  - name: bootloader-source
     type: git
     icon: github-circle
     source:
       uri: git@github.com:petewall/wallhouse-device-wemos-d1-mini.git
       branch: master
       private_key: ((github-repo-key))
+      ignore_paths:
+        - ci/*
+        - ci/**
+        - lib/TempSensor/*
+        - src/firmware/temperature.cpp
+
+  - name: temperature-sensor-source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/wallhouse-device-wemos-d1-mini.git
+      branch: master
+      private_key: ((github-repo-key))
+      ignore_paths:
+        - ci/*
+        - ci/**
+        - lib/Blinker/*
+        - src/firmware/bootloader.cpp
 
   - name: ota-source
     type: git
@@ -85,6 +103,7 @@ jobs:
           params:
             bump: patch
         - get: source
+          resource: bootloader-source
           trigger: true
         - get: ota-source
         - get: platformio
@@ -125,6 +144,7 @@ jobs:
           params:
             bump: patch
         - get: source
+          resource: temperature-sensor-source
           trigger: true
         - get: ota-source
         - get: platformio
