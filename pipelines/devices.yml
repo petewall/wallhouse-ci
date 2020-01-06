@@ -52,6 +52,24 @@ resources:
       file: firmware-bootloader
       private_key: ((github-repo-key))
 
+  - name: family-room-version
+    type: semver
+    source:
+      driver: git
+      uri: git@github.com:petewall/versions.git
+      branch: master
+      file: firmware-family-room
+      private_key: ((github-repo-key))
+
+  - name: master-bedroom-version
+    type: semver
+    source:
+      driver: git
+      uri: git@github.com:petewall/versions.git
+      branch: master
+      file: firmware-master-bedroom
+      private_key: ((github-repo-key))
+
   - name: office-version
     type: semver
     source:
@@ -133,6 +151,94 @@ jobs:
           OTA_SERVICE: http://wallserver.local:8266
           TYPE: d1_mini_bootloader
       - put: bootloader-version
+        params:
+          file: version/version
+
+  - name: build-family-room-firmware
+    plan:
+      - in_parallel:
+        - get: version
+          resource: family-room-version
+          params:
+            bump: patch
+        - get: source
+          resource: temperature-sensor-source
+          trigger: true
+        - get: ota-source
+        - get: platformio
+          passed:
+            - build-platformio
+      - task: check
+        image: platformio
+        config:
+          platform: linux
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: pio
+            args: ["check", "--environment", "d1_mini_family_room"]
+      - task: build
+        image: platformio
+        file: source/ci/tasks/build.yml
+        params:
+          DEVICE_ID: family_room
+          FIRMWARE_TYPE: d1_mini_family_room
+          MQTT_HOSTNAME: wallserver.local
+          MQTT_PASSWORD: ((device-family-room-mqtt-password))
+          OTA_HOST: http://wallserver.local:8266
+          WIFI_SSID: ((wifi-ssid))
+          WIFI_PASSWORD: ((wifi-password))
+      - task: firmware-upload
+        file: ota-source/ci/tasks/upload.yml
+        params:
+          OTA_SERVICE: http://wallserver.local:8266
+          TYPE: d1_mini_family_room
+      - put: family-room-version
+        params:
+          file: version/version
+      
+  - name: build-master-bedroom-firmware
+    plan:
+      - in_parallel:
+        - get: version
+          resource: master-bedroom-version
+          params:
+            bump: patch
+        - get: source
+          resource: temperature-sensor-source
+          trigger: true
+        - get: ota-source
+        - get: platformio
+          passed:
+            - build-platformio
+      - task: check
+        image: platformio
+        config:
+          platform: linux
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: pio
+            args: ["check", "--environment", "d1_mini_master_bedroom"]
+      - task: build
+        image: platformio
+        file: source/ci/tasks/build.yml
+        params:
+          DEVICE_ID: master_bedroom
+          FIRMWARE_TYPE: d1_mini_master_bedroom
+          MQTT_HOSTNAME: wallserver.local
+          MQTT_PASSWORD: ((device-master-bedroom-mqtt-password))
+          OTA_HOST: http://wallserver.local:8266
+          WIFI_SSID: ((wifi-ssid))
+          WIFI_PASSWORD: ((wifi-password))
+      - task: firmware-upload
+        file: ota-source/ci/tasks/upload.yml
+        params:
+          OTA_SERVICE: http://wallserver.local:8266
+          TYPE: d1_mini_master_bedroom
+      - put: master-bedroom-version
         params:
           file: version/version
 
