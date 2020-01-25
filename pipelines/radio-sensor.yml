@@ -7,12 +7,6 @@ resources:
       branch: master
       private_key: ((github-repo-key))
 
-  - name: rtlamr
-    type: github-release
-    source:
-      owner: bemasher
-      repository: rtlamr
-
   - name: image
     type: docker-image
     icon: docker
@@ -26,7 +20,6 @@ jobs:
     plan:
       - get: source
         trigger: true
-      - get: rtlamr
       - put: image
         params:
           build: source
