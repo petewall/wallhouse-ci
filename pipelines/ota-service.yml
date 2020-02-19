@@ -1,3 +1,9 @@
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: teliaoss/github-pr-resource
+
 resources:
   - name: source
     type: git
@@ -35,6 +41,12 @@ resources:
       repository: petewall/ota-service-test
       username: ((dockerhub-username))
       password: ((dockerhub-password))
+
+  - name: pull-requests
+    type: pull-request
+    source:
+      repository: petewall/wallhouse-ota-service
+      access_token: ((github-access-token))
 
 jobs:
   - name: build-feature-test-image
@@ -99,3 +111,82 @@ jobs:
       - put: image
         params:
           build: source
+
+  - name: test-pull-request
+    plan:
+      - get: feature-test-image
+        passed:
+          - build-feature-test-image
+      - get: source
+        resource: pull-requests
+        trigger: true
+        version: every
+        params:
+          integration_tool: rebase
+      - put: pull-requests
+        params:
+          path: source
+          status: pending
+
+      - task: deps
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: node
+              tag: slim
+          inputs:
+            - name: source
+          outputs:
+            - name: source
+          run:
+            dir: source
+            path: npm
+            args: [install]
+        on_failure:
+          put: pull-requests
+          params:
+            path: source
+            status: failure
+      - task: lint
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: node
+              tag: slim
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: npm
+            args: [run, lint]
+        on_failure:
+          put: pull-requests
+          params:
+            path: source
+            status: failure
+      - task: test
+        image: feature-test-image
+        config:
+          platform: linux
+          inputs:
+            - name: source
+          params:
+            CI: true
+            DEBUG: "browser,otaService:*"
+          run:
+            dir: source
+            path: npm
+            args: [test]
+        on_failure:
+          put: pull-requests
+          params:
+            path: source
+            status: failure
+      - put: pull-requests
+        params:
+          path: source
+          status: success
