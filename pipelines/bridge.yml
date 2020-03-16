@@ -113,18 +113,35 @@ jobs:
         params:
           path: source
           status: pending
-      - task: test
-        image: feature-test-image
-        config:
-          platform: linux
-          inputs:
-            - name: source
-          params:
-            DEBUG: "*"
-          run:
-            dir: source
-            path: npm
-            args: [test]
+      - do:
+        - task: deps
+          config:
+            platform: linux
+            image_resource:
+              type: docker-image
+              source:
+                repository: node
+                tag: slim
+            inputs:
+              - name: source
+            outputs:
+              - name: source
+            run:
+              dir: source
+              path: npm
+              args: [install]
+        - task: test
+          image: feature-test-image
+          config:
+            platform: linux
+            inputs:
+              - name: source
+            params:
+              DEBUG: "*"
+            run:
+              dir: source
+              path: npm
+              args: [test]
         on_failure:
           put: pull-requests
           params:
