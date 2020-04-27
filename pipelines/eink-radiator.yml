@@ -1,3 +1,9 @@
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: teliaoss/github-pr-resource
+
 resources:
   - name: source
     type: git
@@ -14,6 +20,12 @@ resources:
       repository: petewall/eink-radiator
       username: ((dockerhub-username))
       password: ((dockerhub-password))
+
+  - name: pull-requests
+    type: pull-request
+    source:
+      repository: petewall/wallhouse-ota-service
+      access_token: ((github-access-token))
 
 jobs:
   - name: test
@@ -45,3 +57,41 @@ jobs:
         params:
           build: source
           cache: true
+
+
+  - name: test-pull-request
+    plan:
+      - get: source
+        resource: pull-requests
+        trigger: true
+        version: every
+        params:
+          integration_tool: rebase
+      - put: pull-requests
+        params:
+          path: source
+          status: pending
+
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: python
+              tag: 3.7
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: make
+            args: [test]
+        on_failure:
+          put: pull-requests
+          params:
+            path: source
+            status: failure
+      - put: pull-requests
+        params:
+          path: source
+          status: success
