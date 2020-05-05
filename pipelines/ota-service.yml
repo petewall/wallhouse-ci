@@ -56,6 +56,18 @@ jobs:
       - put: feature-test-image
         params:
           build: feature-test-image-source/ci
+      - task: compare-chromedriver-versions
+        image: feature-test-image
+        config:
+          platform: linux
+          run:
+            path: bash
+            args:
+              - -exc
+              - |
+                chromedriver_version=$(chromedriver --version | cut -d" " -f2 | cut -d"." -f1)
+                google_chrome_version=$(google-chrome --version | cut -d" " -f3 | cut -d"." -f1)
+                test "${chromedriver_version}" == "${google_chrome_version}"
 
   - name: build-image
     plan:
@@ -144,25 +156,6 @@ jobs:
             dir: source
             path: npm
             args: [install]
-        on_failure:
-          put: pull-requests
-          params:
-            path: source
-            status: failure
-      - task: lint
-        config:
-          platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: node
-              tag: slim
-          inputs:
-            - name: source
-          run:
-            dir: source
-            path: npm
-            args: [run, lint]
         on_failure:
           put: pull-requests
           params:
