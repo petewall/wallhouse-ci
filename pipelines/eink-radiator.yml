@@ -11,6 +11,9 @@ resources:
     source:
       uri: git@github.com:petewall/eink-radiator.git
       branch: master
+      ignore_paths:
+        - ci/*
+        - ci/**
       private_key: ((github-repo-key))
 
   - name: image
@@ -21,13 +24,51 @@ resources:
       username: ((dockerhub-username))
       password: ((dockerhub-password))
 
+  - name: feature-test-image-source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/eink-radiator.git
+      branch: master
+      paths:
+        - ci/Dockerfile
+      private_key: ((github-repo-key))
+      
+  - name: feature-test-image
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/eink-radiator-test
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
   - name: pull-requests
     type: pull-request
     source:
-      repository: petewall/wallhouse-ota-service
+      repository: petewall/eink-radiator
       access_token: ((github-access-token))
 
 jobs:
+  - name: build-feature-test-image
+    plan:
+      - get: feature-test-image-source
+        trigger: true
+      - put: feature-test-image
+        params:
+          build: feature-test-image-source/ci
+      - task: compare-chromedriver-versions
+        image: feature-test-image
+        config:
+          platform: linux
+          run:
+            path: bash
+            args:
+              - -exc
+              - |
+                chromedriver_version=$(chromedriver --version | cut -d" " -f2 | cut -d"." -f1)
+                google_chrome_version=$(google-chrome --version | cut -d" " -f3 | cut -d"." -f1)
+                test "${chromedriver_version}" == "${google_chrome_version}"
+
   - name: lint-javascript
     plan:
       - get: source
@@ -49,16 +90,16 @@ jobs:
 
   - name: lint-python
     plan:
-      - get: source
-        trigger: true
+      - in_parallel:
+        - get: feature-test-image
+          passed:
+            - build-feature-test-image
+        - get: source
+          trigger: true
       - task: test
+        image: feature-test-image
         config:
           platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: python
-              tag: 3.7
           inputs:
             - name: source
           run:
@@ -68,21 +109,23 @@ jobs:
 
   - name: test
     plan:
-      - get: source
-        passed:
-          - lint-javascript
-          - lint-python
-        trigger: true
+      - in_parallel:
+        - get: feature-test-image
+          passed:
+            - lint-python
+        - get: source
+          passed:
+            - lint-javascript
+            - lint-python
+          trigger: true
       - task: test
+        image: feature-test-image
         config:
           platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: python
-              tag: 3.7
           inputs:
             - name: source
+          params:
+            CI: true
           run:
             dir: source
             path: make
@@ -101,6 +144,9 @@ jobs:
 
   - name: test-pull-request
     plan:
+      - get: feature-test-image
+        passed:
+          - build-feature-test-image
       - get: source
         resource: pull-requests
         trigger: true
@@ -113,15 +159,13 @@ jobs:
           status: pending
 
       - task: test
+        image: feature-test-image
         config:
           platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: python
-              tag: 3.7
           inputs:
             - name: source
+          params:
+            CI: true
           run:
             dir: source
             path: make
