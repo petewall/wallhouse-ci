@@ -9,7 +9,6 @@ services:
       - TZ=America/Chicago
     volumes:
       - ../secrets/ddclient.conf:/config/ddclient.conf
-    restart: unless-stopped
 
   nginx:
     image: nginx
@@ -22,7 +21,6 @@ services:
       - 80:80
       - 443:443
     links: [web]
-    restart: always
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   certbot:
