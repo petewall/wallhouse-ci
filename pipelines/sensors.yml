@@ -1,0 +1,45 @@
+resources:
+  - name: source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/wallhouse-sensors.git
+      branch: master
+      private_key: ((github-repo-key))
+
+  - name: dht22-sensor
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/dht22-sensor
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
+  - name: radio-sensor
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/radio-sensor
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
+jobs:
+  - name: build-dht22-image
+    plan:
+      - get: source
+        trigger: true
+      - put: dht22-sensor
+        params:
+          build: source/dht22-sensor
+          build_args:
+            TIMEZONE: America/Chicago
+
+  - name: build-radio-image
+    plan:
+      - get: source
+        trigger: true
+      - put: radio-sensor
+        params:
+          build: source/radio-sensor
+          build_args:
+            TIMEZONE: America/Chicago
