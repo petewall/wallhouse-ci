@@ -15,6 +15,14 @@ resources:
       username: ((dockerhub-username))
       password: ((dockerhub-password))
 
+  - name: mcp3008-device
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/mcp3008-device
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
   - name: radio-sensor
     type: docker-image
     icon: docker
@@ -31,6 +39,16 @@ jobs:
       - put: dht22-sensor
         params:
           build: source/dht22-sensor
+          build_args:
+            TIMEZONE: America/Chicago
+
+  - name: build-mcp3008-device
+    plan:
+      - get: source
+        trigger: true
+      - put: mcp3008-device
+        params:
+          build: source/mcp3008-device
           build_args:
             TIMEZONE: America/Chicago
 
