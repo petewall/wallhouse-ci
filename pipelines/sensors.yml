@@ -1,11 +1,36 @@
 resources:
-  - name: source
+  - name: dht22-sensor-source
     type: git
     icon: github-circle
     source:
       uri: git@github.com:petewall/wallhouse-sensors.git
       branch: master
       private_key: ((github-repo-key))
+      paths:
+        - dht22-sensor/*
+        - dht22-sensor/**
+
+  - name: mcp3008-device-source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/wallhouse-sensors.git
+      branch: master
+      private_key: ((github-repo-key))
+      paths:
+        - mcp3008-device/*
+        - mcp3008-device/**
+
+  - name: radio-sensor-source
+    type: git
+    icon: github-circle
+    source:
+      uri: git@github.com:petewall/wallhouse-sensors.git
+      branch: master
+      private_key: ((github-repo-key))
+      paths:
+        - radio-sensor/*
+        - radio-sensor/**
 
   - name: dht22-sensor
     type: docker-image
@@ -32,9 +57,10 @@ resources:
       password: ((dockerhub-password))
 
 jobs:
-  - name: build-dht22-image
+  - name: build-dht22-sensor
     plan:
       - get: source
+        resource: dht22-sensor-source
         trigger: true
       - put: dht22-sensor
         params:
@@ -45,6 +71,7 @@ jobs:
   - name: build-mcp3008-device
     plan:
       - get: source
+        resource: mcp3008-device-source
         trigger: true
       - put: mcp3008-device
         params:
@@ -52,9 +79,10 @@ jobs:
           build_args:
             TIMEZONE: America/Chicago
 
-  - name: build-radio-image
+  - name: build-radio-sensor
     plan:
       - get: source
+        resource: radio-sensor-source
         trigger: true
       - put: radio-sensor
         params:
