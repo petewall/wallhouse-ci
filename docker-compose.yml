@@ -1,36 +1,5 @@
 version: '3'
 services:
-  ddclient:
-    image: linuxserver/ddclient
-    restart: unless-stopped
-    environment:
-      - PUID=501
-      - PGID=20
-      - TZ=America/Chicago
-    volumes:
-      - ../secrets/ddclient.conf:/config/ddclient.conf
-
-  nginx:
-    image: nginx
-    restart: unless-stopped
-    volumes:
-      - ./nginx.ci.petewall.net.conf:/etc/nginx/conf.d/nginx.ci.petewall.net.conf
-      - ../secrets/certbot/conf:/etc/letsencrypt
-      - ../secrets/certbot/www:/var/www/certbot
-    ports:
-      - 80:80
-      - 443:443
-    links: [web]
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-
-  certbot:
-    image: certbot/certbot
-    restart: unless-stopped
-    volumes:
-      - ../secrets/certbot/conf:/etc/letsencrypt
-      - ../secrets/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-
   db:
     image: postgres
     restart: unless-stopped
@@ -80,3 +49,4 @@ services:
       options:
         max-file: "5"
         max-size: "10m"
+
