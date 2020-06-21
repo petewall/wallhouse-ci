@@ -1,6 +1,6 @@
 version: '3'
 services:
-  db:
+  concourse-db:
     image: postgres
     restart: unless-stopped
     environment:
@@ -14,19 +14,17 @@ services:
         max-file: "5"
         max-size: "10m"
 
-  web:
+  concourse-web:
     image: concourse/concourse
     restart: unless-stopped
     command: web
-    links: [db]
-    depends_on: [db]
+    links: [concourse-db]
+    depends_on: [concourse-db]
     ports: ["8080:8080"]
-    networks:
-      - wallhouse-network_router-network
     volumes: ["./keys/web:/concourse-keys"]
     environment:
       CONCOURSE_EXTERNAL_URL: http://ci.petewall.net
-      CONCOURSE_POSTGRES_HOST: db
+      CONCOURSE_POSTGRES_HOST: concourse-db
       CONCOURSE_POSTGRES_DATABASE: concourse
     env_file: ../secrets/concourse-web.env
     logging:
@@ -35,17 +33,17 @@ services:
         max-file: "5"
         max-size: "10m"
 
-  worker:
+  concourse-worker:
     image: concourse/concourse
     restart: unless-stopped
     command: worker
     privileged: true
-    depends_on: [web]
+    depends_on: [concourse-web]
     volumes: ["./keys/worker:/concourse-keys"]
-    links: [web]
+    links: [concourse-web]
     stop_signal: SIGUSR2
     environment:
-      CONCOURSE_TSA_HOST: web:2222
+      CONCOURSE_TSA_HOST: concourse-web:2222
     logging:
       driver: "json-file"
       options:
@@ -53,6 +51,6 @@ services:
         max-size: "10m"
 
 networks:
-  wallhouse-network_router-network:
-    external: true
-
+  default:
+    external:
+      name: wallhouse-network
