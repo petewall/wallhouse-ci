@@ -7,7 +7,7 @@ resource_types:
 resources:
   - name: reportable-source
     type: git
-    icon: github-circle
+    icon: github
     source:
       uri: git@github.com:petewall/wallhouse-device-reportable.git
       branch: master
