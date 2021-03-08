@@ -9,7 +9,7 @@ resources:
     type: git
     icon: github
     source:
-      uri: git@github.com:petewall/wallhouse-ota-service.git
+      uri: git@github.com:petewall/ota-service.git
       branch: master
       ignore_paths:
         - ci/*
@@ -28,7 +28,7 @@ resources:
     type: git
     icon: github
     source:
-      uri: git@github.com:petewall/wallhouse-ota-service.git
+      uri: git@github.com:petewall/ota-service.git
       branch: master
       paths:
         - ci/Dockerfile
@@ -45,7 +45,7 @@ resources:
   - name: pull-requests
     type: pull-request
     source:
-      repository: petewall/wallhouse-ota-service
+      repository: petewall/ota-service
       access_token: ((github-access-token))
 
 jobs:
@@ -69,7 +69,7 @@ jobs:
                 google_chrome_version=$(google-chrome --version | cut -d" " -f3 | cut -d"." -f1)
                 test "${chromedriver_version}" == "${google_chrome_version}"
 
-  - name: build-image
+  - name: test
     plan:
       - in_parallel:
         - get: feature-test-image
@@ -120,6 +120,13 @@ jobs:
             dir: source
             path: npm
             args: [test]
+
+  - name: build-image
+    plan:
+      - get: source
+        trigger: true
+        passed:
+          - test
       - put: image
         params:
           build: source
