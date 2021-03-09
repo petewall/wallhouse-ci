@@ -12,15 +12,47 @@ resources:
       uri: git@github.com:petewall/ota-service.git
       branch: master
       ignore_paths:
+        - bootloader/*
+        - bootloader/**
         - ci/*
         - ci/**
       private_key: ((github-repo-key))
+
+  - name: bootloader-source
+    type: git
+    icon: github
+    source:
+      uri: git@github.com:petewall/ota-service.git
+      branch: master
+      paths:
+        - bootloader/*
+        - bootloader/**
+      private_key: ((github-repo-key))
+
+  - name: bootloader-version
+    type: semver
+    icon: github
+    source:
+      driver: git
+      uri: git@github.com:petewall/ota-service.git
+      branch: master
+      file: bootloader/version
+      private_key: ((github-repo-key))
+      commit_message: "[ci skip] bump to %version%"
 
   - name: image
     type: docker-image
     icon: docker
     source:
       repository: petewall/ota-service
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
+  - name: platformio
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/platformio
       username: ((dockerhub-username))
       password: ((dockerhub-password))
 
@@ -130,6 +162,52 @@ jobs:
       - put: image
         params:
           build: source
+
+  - name: build-bootloader-firmware
+    plan:
+      - in_parallel:
+        - get: platformio
+        - get: version
+          resource: bootloader-version
+          params:
+            bump: patch
+        - get: source
+          resource: bootloader-source
+          trigger: true
+        - get: ota-source
+          resource: source
+          passed:
+            - test
+      - task: check
+        image: platformio
+        config:
+          platform: linux
+          params:
+            FIRMEARE_VERSION: 0.0.0
+            OTA_HOST: http://wallserver.local:8266
+            WIFI_SSID: fake-ssid
+            WIFI_PASSWORD: fake-password
+          inputs:
+            - name: source
+          run:
+            dir: source/bootloader
+            path: make
+            args: ["check"]
+      - task: build
+        image: platformio
+        file: source/bootloader/ci/tasks/build.yml
+        params:
+          OTA_HOST: http://wallserver.local:8266
+          WIFI_SSID: ((wifi-ssid))
+          WIFI_PASSWORD: ((wifi-password))
+      - task: firmware-upload
+        file: ota-source/ci/tasks/upload.yml
+        params:
+          OTA_SERVICE: http://wallserver.local:8266
+          TYPE: ota_bootloader
+      - put: bootloader-version
+        params:
+          file: version/version
 
   - name: test-pull-request
     plan:
