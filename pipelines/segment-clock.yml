@@ -1,0 +1,162 @@
+# resource_types:
+#   - name: pull-request
+#     type: docker-image
+#     source:
+#       repository: teliaoss/github-pr-resource
+
+resources:
+  - name: source
+    type: git
+    icon: github
+    source:
+      uri: git@github.com:petewall/segment-clock.git
+      branch: master
+      private_key: ((github-repo-key))
+
+  - name: ota-source
+    type: git
+    icon: github
+    source:
+      uri: git@github.com:petewall/ota-service.git
+      branch: master
+      paths:
+        - ci/tasks/upload.yml
+      private_key: ((github-repo-key))
+
+  - name: version
+    type: semver
+    icon: github
+    source:
+      driver: git
+      uri: git@github.com:petewall/segment-clock.git
+      branch: master
+      file: version
+      private_key: ((github-repo-key))
+      commit_message: "[ci skip] bump to %version%"
+
+  - name: platformio
+    type: docker-image
+    icon: docker
+    source:
+      repository: petewall/platformio
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+
+  # - name: pull-requests
+  #   type: pull-request
+  #   source:
+  #     repository: petewall/segment-clock
+  #     access_token: ((github-access-token))
+
+jobs:
+  - name: check
+    plan:
+      - in_parallel:
+        - get: platformio
+        - get: source
+          trigger: true
+      - task: check
+        image: platformio
+        config:
+          platform: linux
+          params:
+            FIRMEARE_VERSION: 0.0.0
+            OTA_HOST: http://wallserver.local:8266
+            WIFI_SSID: fake-ssid
+            WIFI_PASSWORD: fake-password
+          inputs:
+            - name: source
+          run:
+            dir: source
+            path: make
+            args: ["check"]
+
+  - name: build-firmware
+    plan:
+      - in_parallel:
+        - get: platformio
+          passed:
+            - check
+        - get: version
+          params:
+            bump: patch
+        - get: source
+          passed:
+            - check
+          trigger: true
+        - get: ota-source
+      - task: build
+        image: platformio
+        file: source/ci/tasks/build.yml
+        params:
+          OTA_HOST: http://wallserver.local:8266
+          WIFI_SSID: ((wifi-ssid))
+          WIFI_PASSWORD: ((wifi-password))
+      - task: upload-firmware
+        file: ota-source/ci/tasks/upload.yml
+        params:
+          OTA_SERVICE: http://wallserver.local:8266
+          TYPE: segment-clock
+      - put: version
+        params:
+          file: version/version
+
+  # - name: test-pull-request
+  #   plan:
+  #     - get: feature-test-image
+  #       passed:
+  #         - build-feature-test-image
+  #     - get: source
+  #       resource: pull-requests
+  #       trigger: true
+  #       version: every
+  #       params:
+  #         integration_tool: rebase
+  #     - put: pull-requests
+  #       params:
+  #         path: source
+  #         status: pending
+
+  #     - task: deps
+  #       config:
+  #         platform: linux
+  #         image_resource:
+  #           type: docker-image
+  #           source:
+  #             repository: node
+  #             tag: slim
+  #         inputs:
+  #           - name: source
+  #         outputs:
+  #           - name: source
+  #         run:
+  #           dir: source
+  #           path: npm
+  #           args: [install]
+  #       on_failure:
+  #         put: pull-requests
+  #         params:
+  #           path: source
+  #           status: failure
+  #     - task: test
+  #       image: feature-test-image
+  #       config:
+  #         platform: linux
+  #         inputs:
+  #           - name: source
+  #         params:
+  #           CI: true
+  #           DEBUG: "browser,otaService:*"
+  #         run:
+  #           dir: source
+  #           path: npm
+  #           args: [test]
+  #       on_failure:
+  #         put: pull-requests
+  #         params:
+  #           path: source
+  #           status: failure
+  #     - put: pull-requests
+  #       params:
+  #         path: source
+  #         status: success

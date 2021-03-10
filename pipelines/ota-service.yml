@@ -200,11 +200,11 @@ jobs:
           OTA_HOST: http://wallserver.local:8266
           WIFI_SSID: ((wifi-ssid))
           WIFI_PASSWORD: ((wifi-password))
-      - task: firmware-upload
+      - task: upload-firmware
         file: ota-source/ci/tasks/upload.yml
         params:
           OTA_SERVICE: http://wallserver.local:8266
-          TYPE: ota_bootloader
+          TYPE: ota-bootloader
       - put: bootloader-version
         params:
           file: version/version
